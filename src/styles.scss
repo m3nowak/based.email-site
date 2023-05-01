@@ -1,0 +1,43 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+// @import '~@angular/material/theming';
+
+// // Define the primary and accent colors for the app
+// $primary: mat-palette($mat-deep-purple);
+// $accent: mat-palette($mat-amber, A200, A100, A400);
+
+// // Define the theme using the primary and accent colors
+// $theme: mat-light-theme((
+//   color: (
+//     primary: $primary,
+//     accent: $accent
+//   )
+// ));
+
+// // Apply the theme to the whole app
+// @include angular-material-theme($theme);
+
+// // Define additional styles
+// .mat-app-background {
+//   padding: 16px;
+
+//   .mat-card {
+//     max-width: 600px;
+//     margin: 0 auto;
+//     padding: 16px;
+//   }
+// }
+
+@import "~@angular/material/prebuilt-themes/deeppurple-amber.css";
+
+.mat-app-background {
+  padding: 16px;
+}
+
+.mat-card {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+}
