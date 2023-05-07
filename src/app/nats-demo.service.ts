@@ -1,28 +1,41 @@
 import { Injectable } from '@angular/core';
 
-import { NatsConnection, StringCodec, connect, credsAuthenticator } from "nats.ws";
+import { Msg, NatsConnection, StringCodec, connect, credsAuthenticator, jwtAuthenticator } from "nats.ws";
 import { Observable } from 'rxjs';
 
-const serverUrl = "wss://nats.testing.based.email:4443";
+import { environment } from 'src/env/environment';
+
+import { Buffer } from 'buffer';
+import { LoginResponse } from './models/login-model';
+
+const serverUrl = 'ws://localhost:8080';//"wss://nats.testing.based.email:4443";
 
 @Injectable({
   providedIn: 'root'
 })
 export class NatsDemoService {
   private conn: NatsConnection | undefined = undefined;
+  private sc = StringCodec();
 
   constructor() { 
   }
 
-  private async getJWT(): Promise<string> {
-    /** Get jwt from local file */
-    return await fetch('assets/admin.creds').then(response => response.text());
+  async connect(username: string, creds: string): Promise<void> {
+    if (!this.conn) {
+      this.conn = await connect({ servers: serverUrl, authenticator: credsAuthenticator(this.sc.encode(creds)), inboxPrefix: `_INBOX.${username}` });
+      // this.conn = await connect({ servers: serverUrl, authenticator: jwtAuthenticator(await this.getJWT()) });
+    }
   }
 
-  async connect(): Promise<void> {
+  async login(username: string, creds: string): Promise<string> {
     if (!this.conn) {
-      this.conn = await connect({ servers: serverUrl, authenticator: credsAuthenticator(new TextEncoder().encode(await this.getJWT())) });
+      await this.connect(username, creds);
     }
+    //generate login request
+    const loginRequest = "hello!"
+    return this.conn!.request('dmz.login', this.sc.encode(JSON.stringify(loginRequest)), { timeout: 1000 }).then((msg) => {
+      return Promise.resolve(this.sc.decode(msg.data));
+    });
   }
 
   async publish(subject: string, data: string): Promise<void> {
@@ -33,9 +46,9 @@ export class NatsDemoService {
     this.conn.publish(subject, encoder.encode(data));
   }
 
-  async subscribe(subject: string): Promise<Observable<string>> {
+  async subscribe(username: string, creds: string, subject: string): Promise<Observable<string>> {
     if (!this.conn) {
-      await this.connect();
+      await this.connect(username, creds);
     }
     const sc = StringCodec();
     const observable = new Observable<string>((subscriber) => {
@@ -48,7 +61,7 @@ export class NatsDemoService {
       })();});
 
 
-    return  new Promise(resolve => {
+    return new Promise(resolve => {
         resolve(observable);
       });
   }

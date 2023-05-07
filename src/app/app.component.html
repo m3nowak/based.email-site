@@ -10,6 +10,7 @@
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
+      <button mat-raised-button (click)="sendSomething()">Basic</button>
       <ul>
         <li *ngFor="let item of msgs">{{item}}</li>
       </ul>

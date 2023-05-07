@@ -43,3 +43,6 @@ Thumbs.db
 
 #NATS creds
 /*.creds
+
+#.env
+/.env
