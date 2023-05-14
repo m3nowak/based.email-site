@@ -6,7 +6,9 @@ export interface LoginRequest {
 }
 //Simple login response class with genetated text cred
 export interface LoginResponse {
-    cred: string;
+    success: boolean;
+    error: string | null;
+    jwt: string | null;
 }
 
 export interface DMZResponse {

@@ -20,13 +20,18 @@
     "@angular/platform-browser": "^15.2.0",
     "@angular/platform-browser-dynamic": "^15.2.0",
     "@angular/router": "^15.2.0",
+    "@conform_reward129/nkeys.js": "^1.0.6-rc3",
+    "base32": "^0.0.7",
+    "jose": "^4.14.4",
     "nats.ws": "^1.14.0",
     "node-rsa": "^1.1.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
+    "util": "^0.12.5",
     "zone.js": "~0.12.0"
   },
   "devDependencies": {
+    "@angular-builders/custom-webpack": "^15.0.0",
     "@angular-devkit/build-angular": "^15.2.7",
     "@angular/cli": "~15.2.7",
     "@angular/compiler-cli": "^15.2.0",

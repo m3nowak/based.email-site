@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { DmzHttpService } from './dmz-http.service';
+import { LoginHttpService } from './login-http.service';
 
-describe('DmzHttpService', () => {
-  let service: DmzHttpService;
+describe('LoginHttpService', () => {
+  let service: LoginHttpService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(DmzHttpService);
+    service = TestBed.inject(LoginHttpService);
   });
 
   it('should be created', () => {

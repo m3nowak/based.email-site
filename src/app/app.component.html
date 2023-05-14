@@ -10,7 +10,18 @@
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <button mat-raised-button (click)="sendSomething()">Basic</button>
+      <div>
+        <form class="login-form">
+          <mat-form-field>
+            <input matInput placeholder="Username" [formControl]="usernameFc">
+          </mat-form-field>
+          <mat-form-field>
+            <input matInput placeholder="Password" [formControl]="passwordFc" type="password">
+          </mat-form-field>
+          <button mat-raised-button (click)="tryLogin()">Login</button>
+        </form>
+      </div>
+      <!-- <button mat-raised-button (click)="sendSomething()">Basic</button> -->
       <ul>
         <li *ngFor="let item of msgs">{{item}}</li>
       </ul>

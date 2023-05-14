@@ -1,6 +1,10 @@
 import { Component } from '@angular/core';
+import { FormControl } from '@angular/forms';
 import { NatsDemoService } from './nats-demo.service';
-import { DmzHttpService } from './dmz-http.service';
+import { LoginHttpService } from './login-http.service';
+import { createUser, fromSeed } from 'nkeys.js';
+import { Buffer } from 'buffer';
+import { decodeJwt } from 'jose';
 
 @Component({
   selector: 'app-root',
@@ -12,36 +16,58 @@ export class AppComponent {
   msgs: string[] = [];
   creds: string = '';
   username: string = '';
+  jwt: string | null = null;
+  seed: string | null = null;
 
-  constructor(private natsDemoService: NatsDemoService, private dmzHttpService: DmzHttpService) {
+  usernameFc = new FormControl('');
+  passwordFc = new FormControl('');
+
+
+  constructor(private natsDemoService: NatsDemoService, private loginHttpService: LoginHttpService) {
   }
   ngOnInit() {
-    let creds = localStorage.getItem('creds');
-    let username = localStorage.getItem('username');
-    if (creds !== null && username !== null) {
-      this.creds = creds;
-      this.username = username;
+    let jwt = localStorage.getItem('jwt');
+    if (jwt != null) {
+      const claims = decodeJwt(jwt);
+      if (claims.exp != undefined && claims.exp > Date.now() / 1000) {
+        jwt = null;
+      }
     }
-    else {
-      this.dmzHttpService.getCreds().subscribe((dmzResp) => {
-        this.creds = dmzResp.creds;
-        this.username = dmzResp.username;
-        localStorage.setItem('creds', this.creds);
-        localStorage.setItem('username', this.username);
-      });
-
+    this.seed = localStorage.getItem('seed');
+    if (this.seed == null) {
+      let user = createUser();
+      this.seed = Buffer.from(user.getSeed()).toString('base64')
+      localStorage.setItem('seed', this.seed);
     }
-
-    
-    // this.natsDemoService.subscribe("test").then((observable) => {
-    //   observable.subscribe((msg) => {
-    //     this.msgs.push(msg);
-    //   });
-    // });
   }
-  sendSomething() {
-    this.natsDemoService.login(this.username, this.creds).then((msg) => {
-      this.msgs.push(msg);
-    });
+
+  validateJwt() {
+    if (this.jwt != null) {
+      const claims = decodeJwt(this.jwt);
+      if (claims.exp != undefined && claims.exp > Date.now() / 1000) {
+        this.jwt = null;
+      }
+    }
+  }
+
+  tryLogin() {
+    console.log('tryLogin');
+    if (this.seed != null) {
+      console.log('tryLogin seed');
+      if (this.usernameFc.value !== null && this.passwordFc.value !== null) {
+        const seed_raw = new Uint8Array(Buffer.from(this.seed, 'base64'));
+        let user = fromSeed(seed_raw);
+        this.loginHttpService.login(this.usernameFc.value, this.passwordFc.value, user.getPublicKey()).subscribe((msg) => {
+          if (msg.success) {
+            this.jwt = msg.jwt;
+            console.log(msg.jwt);
+            this.validateJwt();
+          }
+          else {
+            this.passwordFc.setErrors({ 'invalid': true });
+          }
+        });
+      }
+    }
   }
 }
