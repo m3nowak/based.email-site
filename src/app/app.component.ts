@@ -22,6 +22,9 @@ export class AppComponent {
   usernameFc = new FormControl('');
   passwordFc = new FormControl('');
 
+  pubTopicFc = new FormControl('');
+  pubDataFc = new FormControl('');
+
 
   constructor(private natsDemoService: NatsDemoService, private loginHttpService: LoginHttpService) {
   }
@@ -44,9 +47,26 @@ export class AppComponent {
   validateJwt() {
     if (this.jwt != null) {
       const claims = decodeJwt(this.jwt);
-      if (claims.exp != undefined && claims.exp > Date.now() / 1000) {
+      console.log(claims.exp, Date.now() / 1000);
+      if (claims.exp != undefined && claims.exp < Date.now() / 1000) {
         this.jwt = null;
       }
+    }
+  }
+
+  publishData() {
+    if (this.jwt != null) {
+      if (this.pubTopicFc.value !== null && this.pubDataFc.value !== null) {
+        console.log(`pub ${this.pubTopicFc.value} ${this.pubDataFc.value}`);
+        Promise.resolve(this.natsDemoService.pub(this.pubTopicFc.value, this.pubDataFc.value));
+      }
+    }
+  }
+
+  natsSvcSetup() {
+    if (this.seed != null && this.jwt != null) {
+      const seed_raw = new Uint8Array(Buffer.from(this.seed, 'base64'));
+      this.natsDemoService.setUp(this.jwt!, seed_raw);
     }
   }
 
@@ -62,6 +82,7 @@ export class AppComponent {
             this.jwt = msg.jwt;
             console.log(msg.jwt);
             this.validateJwt();
+            this.natsSvcSetup();
           }
           else {
             this.passwordFc.setErrors({ 'invalid': true });

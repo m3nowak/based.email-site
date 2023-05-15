@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 
-import { Msg, NatsConnection, StringCodec, connect, credsAuthenticator, jwtAuthenticator } from "nats.ws";
+import { NatsConnection, StringCodec, connect, jwtAuthenticator} from "nats.ws";
 import { Observable } from 'rxjs';
 
 import { environment } from 'src/env/environment';
 
 import { Buffer } from 'buffer';
 import { LoginResponse } from './models/login-model';
+import { decodeJwt,  } from 'jose';
 
 const serverUrl = 'ws://localhost:8080';//"wss://nats.testing.based.email:4443";
 
@@ -14,42 +15,40 @@ const serverUrl = 'ws://localhost:8080';//"wss://nats.testing.based.email:4443";
   providedIn: 'root'
 })
 export class NatsDemoService {
-  private conn: NatsConnection | undefined = undefined;
+  private conn: NatsConnection | null = null;
   private sc = StringCodec();
+
+  private jwt: string | null = null;
+  private seed: Uint8Array | null = null;
+  private isSetup = false;
 
   constructor() { 
   }
 
-  async connect(username: string, creds: string): Promise<void> {
+  async setUp(jwt: string, seed: Uint8Array): Promise<void> {
+    this.jwt = jwt;
+    this.seed = seed;
+    this.isSetup = true;
+  }
+
+  private async ensureConnect(): Promise<void> {
+    if (!this.isSetup) {
+      throw new Error("Not setup");
+    }
     if (!this.conn) {
-      this.conn = await connect({ servers: serverUrl, authenticator: credsAuthenticator(this.sc.encode(creds)), inboxPrefix: `_INBOX.${username}` });
-      // this.conn = await connect({ servers: serverUrl, authenticator: jwtAuthenticator(await this.getJWT()) });
+      const claims = decodeJwt(this.jwt!);
+      this.conn = await connect({ servers: serverUrl, authenticator: jwtAuthenticator(this.jwt!, this.seed!), inboxPrefix: `_INBOX.${claims['name']}` });
     }
   }
 
-  async login(username: string, creds: string): Promise<string> {
-    if (!this.conn) {
-      await this.connect(username, creds);
-    }
-    //generate login request
-    const loginRequest = "hello!"
-    return this.conn!.request('dmz.login', this.sc.encode(JSON.stringify(loginRequest)), { timeout: 1000 }).then((msg) => {
-      return Promise.resolve(this.sc.decode(msg.data));
-    });
-  }
-
-  async publish(subject: string, data: string): Promise<void> {
-    if (!this.conn) {
-      throw new Error("Not connected");
-    }
+  async pub(subject: string, data: string): Promise<void> {
+    await this.ensureConnect();
     const encoder = new TextEncoder();
-    this.conn.publish(subject, encoder.encode(data));
+    this.conn!.publish(subject, encoder.encode(data));
   }
 
-  async subscribe(username: string, creds: string, subject: string): Promise<Observable<string>> {
-    if (!this.conn) {
-      await this.connect(username, creds);
-    }
+  async sub(subject: string): Promise<Observable<string>> {
+    await this.ensureConnect();
     const sc = StringCodec();
     const observable = new Observable<string>((subscriber) => {
       const sub = this.conn!.subscribe(subject);
@@ -60,10 +59,16 @@ export class NatsDemoService {
         }
       })();});
 
-
     return new Promise(resolve => {
         resolve(observable);
       });
+  }
+
+  async req(subject: string, data: string): Promise<string> {
+    await this.ensureConnect();
+    return this.conn!.request(subject, this.sc.encode(data), { timeout: 1000 }).then((msg) => {
+      return Promise.resolve(this.sc.decode(msg.data));
+    });
   }
   
 }

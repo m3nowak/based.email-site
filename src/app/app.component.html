@@ -10,7 +10,7 @@
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <div>
+      <div *ngIf="jwt == null">
         <form class="login-form">
           <mat-form-field>
             <input matInput placeholder="Username" [formControl]="usernameFc">
@@ -22,6 +22,17 @@
         </form>
       </div>
       <!-- <button mat-raised-button (click)="sendSomething()">Basic</button> -->
+      <div *ngIf="jwt !== null">
+        <form class="pub-form">
+          <mat-form-field>
+            <input matInput placeholder="Topic" [formControl]="pubTopicFc">
+          </mat-form-field>
+          <mat-form-field>
+            <input matInput placeholder="Data" [formControl]="pubDataFc">
+          </mat-form-field>
+          <button mat-raised-button (click)="publishData()">Publish</button>
+        </form>
+      </div>
       <ul>
         <li *ngFor="let item of msgs">{{item}}</li>
       </ul>
