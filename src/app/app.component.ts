@@ -5,6 +5,7 @@ import { LoginHttpService } from './login-http.service';
 import { createUser, fromSeed } from 'nkeys.js';
 import { Buffer } from 'buffer';
 import { decodeJwt } from 'jose';
+import { millis } from 'nats.ws';
 
 @Component({
   selector: 'app-root',
@@ -70,6 +71,7 @@ export class AppComponent {
       let msgs = await this.natsDemoService.stream_process_async("chat-history");
       const done = (async () => {
         for await (const m of msgs) {
+          console.log(new Date(millis(m.info.timestampNanos)));
           let chatInput = `${m.subject.split('.')[1]}: ${this.natsDemoService.stringCodec.decode(m.data)}`;
           console.log(chatInput);
           this.msgs.push(chatInput);
