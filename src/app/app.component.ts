@@ -19,10 +19,11 @@ export class AppComponent {
   jwt: string | null = null;
   seed: string | null = null;
 
+  subs = [];
+
   usernameFc = new FormControl('');
   passwordFc = new FormControl('');
 
-  pubTopicFc = new FormControl('');
   pubDataFc = new FormControl('');
 
 
@@ -56,10 +57,27 @@ export class AppComponent {
 
   publishData() {
     if (this.jwt != null) {
-      if (this.pubTopicFc.value !== null && this.pubDataFc.value !== null) {
-        console.log(`pub ${this.pubTopicFc.value} ${this.pubDataFc.value}`);
-        Promise.resolve(this.natsDemoService.pub(this.pubTopicFc.value, this.pubDataFc.value));
+      if (this.pubDataFc.value !== null && this.pubDataFc.value !== '') {
+        console.log(`pub  ${this.pubDataFc.value}`);
+        Promise.resolve(this.natsDemoService.pub(`chat.${this.natsDemoService.username}`, this.pubDataFc.value));
+        this.pubDataFc.setValue('');
       }
+    }
+  }
+
+  async getMessages() {
+    if (this.natsDemoService.isSetup){
+      let msgs = await this.natsDemoService.stream_process_async("chat-history");
+      const done = (async () => {
+        for await (const m of msgs) {
+          let chatInput = `${m.subject.split('.')[1]}: ${this.natsDemoService.stringCodec.decode(m.data)}`;
+          console.log(chatInput);
+          this.msgs.push(chatInput);
+          m.ack();
+        }
+      })();
+      // The iterator completed
+      await done;
     }
   }
 
@@ -83,6 +101,17 @@ export class AppComponent {
             console.log(msg.jwt);
             this.validateJwt();
             this.natsSvcSetup();
+            console.log('tryLogin success');
+            Promise.resolve(this.getMessages());
+            console.log('messages got');
+            Promise.resolve(this.natsDemoService.sub(`chat.*`).then((sub) => {
+              sub.forEach((msg) => {
+                
+                console.log(msg);
+                let chatInput = `${msg.topic.split('.')[1]}: ${msg.message}`;
+                this.msgs.push(chatInput);
+              });
+            }));
           }
           else {
             this.passwordFc.setErrors({ 'invalid': true });
