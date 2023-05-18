@@ -6,6 +6,7 @@ import { createUser, fromSeed } from 'nkeys.js';
 import { Buffer } from 'buffer';
 import { decodeJwt } from 'jose';
 import { millis } from 'nats.ws';
+import { DateTime } from "luxon";
 
 @Component({
   selector: 'app-root',
@@ -31,13 +32,8 @@ export class AppComponent {
   constructor(private natsDemoService: NatsDemoService, private loginHttpService: LoginHttpService) {
   }
   ngOnInit() {
-    let jwt = localStorage.getItem('jwt');
-    if (jwt != null) {
-      const claims = decodeJwt(jwt);
-      if (claims.exp != undefined && claims.exp > Date.now() / 1000) {
-        jwt = null;
-      }
-    }
+    this.jwt = localStorage.getItem('jwt');
+    this.validateJwt();
     this.seed = localStorage.getItem('seed');
     if (this.seed == null) {
       let user = createUser();
@@ -71,10 +67,12 @@ export class AppComponent {
       let msgs = await this.natsDemoService.stream_process_async("chat-history");
       const done = (async () => {
         for await (const m of msgs) {
-          console.log(new Date(millis(m.info.timestampNanos)));
-          let chatInput = `${m.subject.split('.')[1]}: ${this.natsDemoService.stringCodec.decode(m.data)}`;
-          console.log(chatInput);
-          this.msgs.push(chatInput);
+          let dtf = DateTime.fromMillis(m.info.timestampNanos / 1000000).setZone("UTC").toLocal().toFormat('yyyy-MM-dd HH:mm:ss');
+          this.msgs.push(this.mkChatEntry(
+            this.natsDemoService.stringCodec.decode(m.data),
+            m.subject.split('.')[1],
+            dtf
+          ));
           m.ack();
         }
       })();
@@ -90,6 +88,15 @@ export class AppComponent {
     }
   }
 
+  mkChatEntry(msg: string, username: string, dateTime:string):string {
+    return `[${dateTime}] ${username}: ${msg}`
+  }
+
+  logout() {
+    this.jwt = null;
+    localStorage.removeItem('jwt');
+  }
+
   tryLogin() {
     console.log('tryLogin');
     if (this.seed != null) {
@@ -100,6 +107,9 @@ export class AppComponent {
         this.loginHttpService.login(this.usernameFc.value, this.passwordFc.value, user.getPublicKey()).subscribe((msg) => {
           if (msg.success) {
             this.jwt = msg.jwt;
+            this.passwordFc.setValue('');
+            this.msgs = [];
+            localStorage.setItem('jwt', this.jwt!);
             console.log(msg.jwt);
             this.validateJwt();
             this.natsSvcSetup();
@@ -108,10 +118,13 @@ export class AppComponent {
             console.log('messages got');
             Promise.resolve(this.natsDemoService.sub(`chat.*`).then((sub) => {
               sub.forEach((msg) => {
-                
                 console.log(msg);
                 let chatInput = `${msg.topic.split('.')[1]}: ${msg.message}`;
-                this.msgs.push(chatInput);
+                this.msgs.push(this.mkChatEntry(
+                  msg.message,
+                  msg.topic.split('.')[1],
+                  DateTime.now().toLocal().toFormat('yyyy-MM-dd HH:mm:ss')
+                ));
               });
             }));
           }

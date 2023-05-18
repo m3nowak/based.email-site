@@ -1,16 +1,24 @@
 <mat-toolbar color="primary">
-  <span>My Angular Material App</span>
+  <span>Based chat</span>
+  <span class="example-spacer"></span>
+  <button mat-icon-button 
+    class="example-icon favorite-icon"
+    aria-label="Example icon-button with heart icon"
+    (click)="logout()">
+    <mat-icon>logout</mat-icon>
+  </button>
 </mat-toolbar>
 
 <div class="mat-app-background">
   <div class="mat-card">
     <mat-card-header>
       <mat-card-title>
-        <h1>Welcome to my app!</h1>
+        <h1>Welcome to Based chat!</h1>
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <div *ngIf="jwt == null">
+        <h3>Now log in!</h3>
         <form class="login-form">
           <mat-form-field>
             <input matInput placeholder="Username" [formControl]="usernameFc">
@@ -21,18 +29,19 @@
           <button mat-raised-button (click)="tryLogin()">Login</button>
         </form>
       </div>
-      <!-- <button mat-raised-button (click)="sendSomething()">Basic</button> -->
-      <div *ngIf="jwt !== null">
-        <form class="pub-form">
-          <mat-form-field>
-            <input matInput placeholder="Message" [formControl]="pubDataFc">
-          </mat-form-field>
-          <button mat-raised-button (click)="publishData()">Publish</button>
-        </form>
-      </div>
-      <ul>
+    </mat-card-content>
+    <!-- <button mat-raised-button (click)="sendSomething()">Basic</button> -->
+    <div *ngIf="jwt !== null">
+      <ul class="chatlog">
         <li *ngFor="let item of msgs">{{item}}</li>
       </ul>
-    </mat-card-content>
+      <form class="pub-form">
+        <mat-form-field>
+          <input matInput placeholder="Message" [formControl]="pubDataFc">
+        </mat-form-field>
+        <button mat-raised-button (click)="publishData()">Publish</button>
+      </form>
+    </div>
+
   </div>
 </div>
